@@ -4,8 +4,9 @@ g++ -O2 -std=c++17 -o ptil ptil.cpp
 
 Run:
 
-./ptil <graph.txt> <k>
+./ptil <graph.txt> <k.>
 
+k. is the number of group
 query file:<graph.txt>/query/query_*.txt
 
  ```
