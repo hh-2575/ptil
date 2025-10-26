@@ -2,7 +2,7 @@ Compile:
  g++ -O2 -std=c++17 -o ptil ptil.cpp
 
 Run:
- ./a <graph.txt> <k>  
+ ./ptil <graph.txt> <k>  
 
 query file:<graph.txt>/query/query_*.txt
 

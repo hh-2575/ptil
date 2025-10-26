@@ -895,7 +895,7 @@ int main(int argc, char *argv[]) {
   string dir = parent_dir + "/query";
   string prefix = "query";
   subgraph_number = stoi(argv[2]);
-  string outname = parent_dir + "/result_a_" + to_string(subgraph_number) + "_output.log";
+  string outname = parent_dir + "/result_ptil_" + to_string(subgraph_number) + "_output.log";
   if (!freopen(outname.c_str(), "w", stdout)) {
     std::fprintf(stderr, "Error: cannot redirect stdout to %s\n", outname.c_str());
     return 1;
