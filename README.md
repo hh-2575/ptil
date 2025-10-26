@@ -1,8 +1,11 @@
+Compile:
  g++ -O2 -std=c++17 -o ptil ptil.cpp
 
+Run:
  ./a <graph.txt> <k>  
 
 query file:<graph.txt>/query/query_*.txt
+
  ```
 # optional comment lines start with '#'
 N M
@@ -28,4 +31,4 @@ u(N-1) ...
 ```
 This encodes edges: `0→1, 0→2, 1→3, 2→3, 2→4, 3→4`.
 
-> Note: PTIL is typically used on DAGs. 
+Please note vertices are numbered from 0 to V - 1, and the graph must be a DAG.
