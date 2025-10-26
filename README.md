@@ -6,7 +6,8 @@ Run:
 
 ./ptil <graph.txt> <k.>
 
-k. is the number of group
+k. is the number of groups
+
 query file:<graph.txt>/query/query_*.txt
 
  ```
