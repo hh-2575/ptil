@@ -8,7 +8,7 @@
 #include <iostream>
 #include <filesystem>
 #include <string>
-#include <queue>      
+#include <queue>
 #include <climits>
 #include <unordered_set>
 #include <cassert>
@@ -22,28 +22,23 @@
 #include <cmath>
 #include <random>
 
-
 namespace bs {
 
 using namespace std;
 
 struct node {
-  int id;              
+  int id;
   int N_O_SZ, N_I_SZ;
   int *N_O, *N_I;
-  int vis;  
-	
-  int group_id;        // 该节点所属的组ID，-1表示未分组（汇点）
-	
-	
-    
- vector<vector<pair<int, int>>> interval_array;
-   int tin, tout;                        
-   int t;                         
+  int vis;
+  int group_id;
+  vector<vector<pair<int, int>>> interval_array;
+  int tin, tout;
+  int t;
 };
 
 vector<node> nodes;
-vector<vector<int>> node_groups;  // node_groups[i] 存储第i组的所有节点ID
+vector<vector<int>> node_groups;
 
 int vis_cur, cur;
 int subgraph_number;
@@ -51,29 +46,26 @@ vector<int> group_sizes;
 
 static constexpr int BS_THRESHOLD = 8;
 
-
 void read_graph(const char *filename) {
     timeval start_at, end_at;
     gettimeofday(&start_at, nullptr);
 
     FILE *file = fopen(filename, "r");
     if (!file) {
-        fprintf(stderr, "无法打开文件 %s\n", filename);
+        fprintf(stderr, "Failed to open file %s\n", filename);
         return;
     }
 
     char buffer[1024];
-    // 跳过第一行注释
     if (!fgets(buffer, sizeof(buffer), file)) {
-        fprintf(stderr, "无法读取注释行\n");
+        fprintf(stderr, "Failed to read the comment line\n");
         fclose(file);
         return;
     }
 
     int n, m;
-    // 读第二行：节点数 n 和 边数 m
     if (fscanf(file, "%d %d", &n, &m) != 2) {
-        fprintf(stderr, "读取 n, m 失败\n");
+        fprintf(stderr, "Failed to read n and m\n");
         fclose(file);
         return;
     }
@@ -103,8 +95,7 @@ void read_graph(const char *filename) {
     fclose(file);
 
     for (int u = 0; u < n; u++) {
-        nodes[u].id = u;         // 设置节点ID
-				
+        nodes[u].id = u;
         nodes[u].N_O_SZ = (int)N_O[u].size();
         nodes[u].N_O = new int[nodes[u].N_O_SZ];
         for (int i = 0; i < nodes[u].N_O_SZ; i++)
@@ -115,12 +106,9 @@ void read_graph(const char *filename) {
         for (int i = 0; i < nodes[u].N_I_SZ; i++)
             nodes[u].N_I[i] = N_I[u][i];
 
-        // 初始化 interval_array，大小为 subgraph_number
         nodes[u].interval_array.resize(subgraph_number);
-        
-        // 初始化其他字段
         nodes[u].vis = 0;
-        nodes[u].group_id = -1;  // -1 表示未分组
+        nodes[u].group_id = -1;
         nodes[u].tin = -1;
         nodes[u].tout = -1;
     }
@@ -131,56 +119,50 @@ void read_graph(const char *filename) {
     printf("read time(graph): %.3f ms\n", elapsed * 1000);
 }
 
-
 void calculate_subgraph_sizes() {
     timeval start_at, end_at;
     gettimeofday(&start_at, nullptr);
-    
-    printf("\n=== 计算子图分组大小（随机平均分配所有节点） ===\n");
-    
+
+    printf("\n=== Compute subgraph group sizes (random even partition of all nodes) ===\n");
+
     int total_nodes = nodes.size();
-    printf("总节点数: %d\n", total_nodes);
-    printf("需要分成 %d 个组\n", subgraph_number);
-    
+    printf("Total nodes: %d\n", total_nodes);
+    printf("Number of groups: %d\n", subgraph_number);
+
     if (subgraph_number <= 0) {
-        printf("错误：subgraph_number必须大于0\n");
+        printf("Error: subgraph_number must be > 0\n");
         return;
     }
-    
+
     if (total_nodes == 0) {
-        printf("错误：没有节点可以分组\n");
+        printf("Error: no nodes to partition\n");
         return;
     }
-    
-    // 1. 初始化数据结构
+
     group_sizes.resize(subgraph_number);
     node_groups.resize(subgraph_number);
-    
-    // 2. 计算每组的大小
+
     int base_size = total_nodes / subgraph_number;
     int remainder = total_nodes % subgraph_number;
-    
+
     for (int i = 0; i < subgraph_number; i++) {
         if (i < remainder) {
             group_sizes[i] = base_size + 1;
         } else {
             group_sizes[i] = base_size;
         }
-        node_groups[i].reserve(group_sizes[i]);  // 预分配空间
+        node_groups[i].reserve(group_sizes[i]);
     }
-    
-    // 3. 创建随机排列的节点ID列表
+
     vector<int> node_ids(total_nodes);
     for (int i = 0; i < total_nodes; i++) {
         node_ids[i] = i;
     }
-    
-    
-    std::random_device rd;  
-    std::mt19937 gen(rd()); 
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
     std::shuffle(node_ids.begin(), node_ids.end(), gen);
-    
-    // 4. 将节点分配到各组
+
     int node_index = 0;
     for (int group = 0; group < subgraph_number; group++) {
         for (int i = 0; i < group_sizes[group]; i++) {
@@ -189,31 +171,26 @@ void calculate_subgraph_sizes() {
             node_groups[group].push_back(node_id);
         }
     }
-    
-    // 5. 输出分组结果
-    printf("\n分组结果（随机平均分配）：\n");
+
+    printf("\nGrouping result (random even split):\n");
     int total_check = 0;
     int min_size = INT_MAX;
     int max_size = 0;
-    
+
     for (int i = 0; i < subgraph_number; i++) {
-        printf("  组 %d: %d 个节点\n", i, group_sizes[i]);
+        printf("  Group %d: %d nodes\n", i, group_sizes[i]);
         total_check += group_sizes[i];
         min_size = min(min_size, group_sizes[i]);
         max_size = max(max_size, group_sizes[i]);
     }
-    
-    // 6. 验证
-    printf("\n验证：\n");
-    printf("  总分配节点数: %d\n", total_check);
-    printf("  应分配节点数: %d\n", total_nodes);
-    printf("  最小组大小: %d\n", min_size);
-    printf("  最大组大小: %d\n", max_size);
-    printf("  大小差异: %d (应该 <= 1)\n", max_size - min_size);
-    
-    
-    
-    // 8. 验证所有节点都被分配
+
+    printf("\nVerify:\n");
+    printf("  Total assigned nodes: %d\n", total_check);
+    printf("  Expected nodes: %d\n", total_nodes);
+    printf("  Min group size: %d\n", min_size);
+    printf("  Max group size: %d\n", max_size);
+    printf("  Size gap: %d (should be <= 1)\n", max_size - min_size);
+
     int unassigned_count = 0;
     for (int i = 0; i < total_nodes; i++) {
         if (nodes[i].group_id == -1) {
@@ -221,10 +198,9 @@ void calculate_subgraph_sizes() {
         }
     }
     if (unassigned_count > 0) {
-        printf("  警告：有 %d 个节点未被分配！\n", unassigned_count);
+        printf("  Warning: %d nodes unassigned!\n", unassigned_count);
     }
-    
-    // 9. 计算标准差（衡量分配的均匀程度）
+
     double mean = (double)total_nodes / subgraph_number;
     double variance = 0;
     for (int i = 0; i < subgraph_number; i++) {
@@ -232,113 +208,90 @@ void calculate_subgraph_sizes() {
     }
     variance /= subgraph_number;
     double std_dev = sqrt(variance);
-    
-    printf("  平均每组大小: %.2f\n", mean);
-    printf("  标准差: %.2f (越小越均匀)\n", std_dev);
-    
+
+    printf("  Average group size: %.2f\n", mean);
+    printf("  Std dev: %.2f (smaller is more even)\n", std_dev);
+
     gettimeofday(&end_at, nullptr);
     double elapsed = (end_at.tv_sec - start_at.tv_sec)
                    + (end_at.tv_usec - start_at.tv_usec) * 1e-6;
-    printf("\n计算时间: %.3f ms\n", elapsed * 1000);
+    printf("\nElapsed: %.3f ms\n", elapsed * 1000);
 }
 
-
-
-// 优化的合并区间列表 - 确保结果始终排序
 void merge_intervals(vector<pair<int,int>> &to, const vector<pair<int,int>> &from) {
     if (from.empty()) return;
     if (to.empty()) {
         to = from;
         return;
     }
-    
-    // 预先reserve空间
     to.reserve(to.size() + from.size());
     to.insert(to.end(), from.begin(), from.end());
-    
-    // 排序所有区间
     sort(to.begin(), to.end());
-    
-    // 原地合并重叠区间
     int write_idx = 0;
-    for (int read_idx = 1; read_idx < to.size(); ++read_idx) {
+    for (int read_idx = 1; read_idx < (int)to.size(); ++read_idx) {
         if (to[write_idx].second >= to[read_idx].second) {
-            // 当前区间被包含，跳过
             continue;
         } else if (to[write_idx].second >= to[read_idx].first - 1) {
-            // 重叠或相邻，合并
             to[write_idx].second = max(to[write_idx].second, to[read_idx].second);
         } else {
-            // 不相邻，添加新区间
             to[++write_idx] = to[read_idx];
         }
     }
     to.resize(write_idx + 1);
-    
 }
-
-
-
-
-
-
-
 
 void build_ferrari_index_for_subgraph(int group) {
     timeval start_at, end_at;
     gettimeofday(&start_at, nullptr);
-    
-    printf("构建组 %d 的Ferrari索引\n", group);
-    
+
+    printf("Build Ferrari index for group %d\n", group);
+
     int n = nodes.size();
-    
+
     for (int u = 0; u < n; u++) {
-        
         nodes[u].tin = -1;
         nodes[u].tout = -1;
-    
     }
-    // 1. 拓扑排序
-      vector<int> indeg(n, 0), topo_order;
-      for (int i = 0; i < n; ++i) {
-          for (int j = 0; j < nodes[i].N_O_SZ; ++j) {
-              indeg[nodes[i].N_O[j]]++;
-          }
-      }
-      
-      queue<int> q;
-      for (int i = 0; i < n; ++i) {
-          if (indeg[i] == 0) {
-              q.push(i);
-          }
-      }
 
-      while (!q.empty()) {
-          int v = q.front(); 
-          q.pop();
-          topo_order.push_back(v);
-          for (int i = 0; i < nodes[v].N_O_SZ; ++i) {
-              int u = nodes[v].N_O[i];
-              if (--indeg[u] == 0) {
-                  q.push(u);
-              }
-          }
-      }
+    vector<int> indeg(n, 0), topo_order;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < nodes[i].N_O_SZ; ++j) {
+            indeg[nodes[i].N_O[j]]++;
+        }
+    }
 
-    // 2. 构建树覆盖 - 优化版本
+    queue<int> q;
+    for (int i = 0; i < n; ++i) {
+        if (indeg[i] == 0) {
+            q.push(i);
+        }
+    }
+
+    while (!q.empty()) {
+        int v = q.front();
+        q.pop();
+        topo_order.push_back(v);
+        for (int i = 0; i < nodes[v].N_O_SZ; ++i) {
+            int u = nodes[v].N_O[i];
+            if (--indeg[u] == 0) {
+                q.push(u);
+            }
+        }
+    }
+
     vector<int> parent_in_tree(n, -1);
-    vector<int> topo_rank(n); // 预计算拓扑序位置
+    vector<int> topo_rank(n);
     for (int i = 0; i < n; ++i) {
         topo_rank[topo_order[i]] = i;
     }
-    
+
     for (int i = 0; i < n; ++i) {
         int v = topo_order[i];
         int max_pre = -1, max_rank = -1;
         for (int j = 0; j < nodes[v].N_I_SZ; ++j) {
             int u = nodes[v].N_I[j];
             if (u == v) continue;
-            int rank = topo_rank[u]; 
+            int rank = topo_rank[u];
             if (rank > max_rank) {
                 max_rank = rank;
                 max_pre = u;
@@ -347,10 +300,8 @@ void build_ferrari_index_for_subgraph(int group) {
         parent_in_tree[v] = max_pre;
     }
 
-    
-    // 3. DFS遍历 - 为当前组的节点分配时间戳
     vector<int> roots;
-    roots.reserve(n/10); // 预估根节点数量
+    roots.reserve(n/10);
     for (int i = 0; i < n; ++i) {
         if (parent_in_tree[i] == -1) {
             roots.push_back(i);
@@ -360,38 +311,32 @@ void build_ferrari_index_for_subgraph(int group) {
     vector<int> mid(n, -1);
     vector<int> next_child(n, 0);
     int id_counter = 0;
-    
-    // 使用栈进行DFS遍历
+
     stack<int> dfs_stack;
     for (int root : roots) {
         dfs_stack.push(root);
     }
-    
+
     while (!dfs_stack.empty()) {
         int v = dfs_stack.top();
-        
+
         if (mid[v] != -1 && next_child[v] >= nodes[v].N_O_SZ) {
             dfs_stack.pop();
-            
-            
-            // 只有group节点才分配新的时间戳
             if (nodes[v].group_id == group) {
                 nodes[v].tout = id_counter++;
                 nodes[v].t = nodes[v].tout;
-                
                 nodes[v].interval_array[group].reserve(1);
                 nodes[v].interval_array[group].emplace_back(mid[v], nodes[v].tout);
             }
         } else {
             if (mid[v] == -1) {
-                // 只有group节点才分配进入时间戳
                 if (nodes[v].group_id == group) {
                     mid[v] = id_counter;
                 } else {
-                    mid[v] = 0; // 标记为已访问，但不分配真正的时间戳
+                    mid[v] = 0;
                 }
             }
-            
+
             if (next_child[v] < nodes[v].N_O_SZ) {
                 int child = nodes[v].N_O[next_child[v]++];
                 if (parent_in_tree[child] == v) {
@@ -400,77 +345,59 @@ void build_ferrari_index_for_subgraph(int group) {
             }
         }
     }
-    
-    // 使用反向拓扑序为非group节点分配时间戳（其出邻居的最小时间戳）
-    for (int i = topo_order.size() - 1; i >= 0; --i) {
+
+    for (int i = (int)topo_order.size() - 1; i >= 0; --i) {
         int v = topo_order[i];
-        
+
         if (nodes[v].group_id != group) {
             int min_timestamp = INT_MAX;
-            
-            // 遍历所有出邻居，找最小的时间戳
             for (int j = 0; j < nodes[v].N_O_SZ; ++j) {
                 int neighbor = nodes[v].N_O[j];
                 if (nodes[neighbor].tout < min_timestamp) {
                     min_timestamp = nodes[neighbor].tout;
                 }
             }
-            
-            // 设置时间戳
-            nodes[v].tout = min_timestamp;  // 如果没有出邻居，min_timestamp保持为INT_MAX
-            
-            // 非group节点不创建区间
+            nodes[v].tout = min_timestamp;
             nodes[v].interval_array[group].clear();
         }
     }
-    // 4. 区间合并 - 为每个节点构建对所有其他组的可达区间
+
     reverse(topo_order.begin(), topo_order.end());
-    
+
     for (int v : topo_order) {
-        if (nodes[v].N_O_SZ == 0) continue;  // 跳过叶节点
-        
-        // 处理每个出边
+        if (nodes[v].N_O_SZ == 0) continue;
         for (int i = 0; i < nodes[v].N_O_SZ; ++i) {
             int u = nodes[v].N_O[i];
-            
+
             if (nodes[v].group_id == group && nodes[u].group_id == group) {
-                // group node到group node的前向边判断
-                if (!(parent_in_tree[u] == v) && 
-                    (mid[v] <= nodes[u].tout) && 
+                if (!(parent_in_tree[u] == v) &&
+                    (mid[v] <= nodes[u].tout) &&
                     (nodes[u].tout < nodes[v].tout)) {
                     continue;
                 }
             }
-            
-            // 合并区间
+
             if (!nodes[u].interval_array[group].empty()) {
                 merge_intervals(nodes[v].interval_array[group], nodes[u].interval_array[group]);
             }
         }
     }
-    
-    // 清理叶节点的区间
+
     for (int i = 0; i < n; ++i) {
         if (nodes[i].N_O_SZ == 0) {
-            
             nodes[i].interval_array[group].clear();
-        
         }
     }
-    
-    
-    // 6. 统计信息
+
     int total_intervals = 0;
     int max_intervals = 0;
-    int nodes_with_intervals = 0;  // 新增：统计有区间的节点数
+    int nodes_with_intervals = 0;
 
     for (int u = 0; u < n; u++) {
         int node_intervals = nodes[u].interval_array[group].size();
-        
         if (node_intervals > 0) {
-            nodes_with_intervals++;  // 只统计有区间的节点
+            nodes_with_intervals++;
         }
-        
         total_intervals += node_intervals;
         max_intervals = max(max_intervals, node_intervals);
     }
@@ -479,36 +406,29 @@ void build_ferrari_index_for_subgraph(int group) {
     double elapsed = (end_at.tv_sec - start_at.tv_sec)
                 + (end_at.tv_usec - start_at.tv_usec) * 1e-6;
 
-    printf("  组 %d 索引构建完成\n", group);
-    printf("  - 节点数: %d\n", (int)node_groups[group].size());
-    printf("  - 总区间数: %d\n", total_intervals);
-    printf("  - 有区间的节点数: %d\n", nodes_with_intervals);
-    printf("  - 有区间的节点平均区间数: %.2f\n", 
+    printf("  Group %d index built\n", group);
+    printf("  - number of nodes: %d\n", (int)node_groups[group].size());
+    printf("  - total intervals: %d\n", total_intervals);
+    printf("  - nodes with intervals: %d\n", nodes_with_intervals);
+    printf("  - avg intervals on nodes with intervals: %.2f\n",
         nodes_with_intervals > 0 ? (double)total_intervals / nodes_with_intervals : 0.0);
-    printf("  - 最大区间数: %d\n", max_intervals);
-    printf("  - 构建时间: %.3f ms\n", elapsed * 1000);
+    printf("  - max intervals: %d\n", max_intervals);
+    printf("  - build time: %.3f ms\n", elapsed * 1000);
 }
 
-// 构建所有组的子图（主函数）
 void build_all_group_subgraphs() {
     timeval start_at, end_at;
     gettimeofday(&start_at, nullptr);
     int n = nodes.size();
-    
-    
-    // 为每个组计算可达性并构建子图
-    printf("\n开始逐组处理...\n");
+
+    printf("\nStart processing groups...\n");
     for (int group = 0; group < subgraph_number; group++) {
-        printf("\n--- 处理组 %d/%d ---\n", group + 1, subgraph_number);
-        
-        
+        printf("\n--- Processing group %d/%d ---\n", group + 1, subgraph_number);
         build_ferrari_index_for_subgraph(group);
     }
-    
-    // 清理叶节点的区间
+
     for (int i = 0; i < n; ++i) {
         if (nodes[i].N_O_SZ == 0) {
-            // 叶节点清空所有区间
             for (int g = 0; g < subgraph_number; ++g) {
                 nodes[i].interval_array[g].clear();
             }
@@ -517,31 +437,25 @@ void build_all_group_subgraphs() {
     gettimeofday(&end_at, nullptr);
     double elapsed = (end_at.tv_sec - start_at.tv_sec)
                    + (end_at.tv_usec - start_at.tv_usec) * 1e-6;
-    
-    // 总体统计
-    printf("\n=== 组子图构建总结 ===\n");
-    printf("总构建时间: %.3f ms\n", elapsed * 1000);
-    
-    
-    
-    printf("=== 组子图构建完成 ===\n\n");
+
+    printf("\n=== Summary of group subgraph construction ===\n");
+    printf("Total build time: %.3f ms\n", elapsed * 1000);
+    printf("=== Finished building group subgraphs ===\n\n");
 }
 
 void calculate_index_size() {
     timeval start_at, end_at;
     gettimeofday(&start_at, nullptr);
-    
-    printf("\n=== 计算索引大小和统计信息 ===\n");
-    
-    // 1. 计算内存占用
+
+    printf("\n=== Compute index size and statistics ===\n");
+
     size_t total_memory = 0;
     size_t interval_memory = 0;
     size_t timestamp_memory = 0;
-    
-    // 统计信息
+
     size_t total_intervals = 0;
     size_t max_intervals_per_node = 0;
-    
+
     for (size_t i = 0; i < nodes.size(); i++) {
         size_t node_intervals = 0;
         for (int g = 0; g < subgraph_number; ++g) {
@@ -549,57 +463,51 @@ void calculate_index_size() {
             node_intervals += nodes[i].interval_array[g].size();
         }
 
-        timestamp_memory += sizeof(int);  // 每个节点一个 timestamp（仍是 int）
+        timestamp_memory += sizeof(int);
 
         total_intervals += node_intervals;
         max_intervals_per_node = max(max_intervals_per_node, node_intervals);
     }
-    
+
     total_memory = interval_memory + timestamp_memory;
-    
-    // 2. 输出结果
-    printf("\n内存占用:\n");
+
+    printf("\nMemory usage:\n");
     printf("  - interval_memory: %.3f MB\n", interval_memory / (1024.0 * 1024.0));
     printf("  - timestamp_memory: %.3f MB\n", timestamp_memory / (1024.0 * 1024.0));
     printf("  - total_memory: %.3f MB\n", total_memory / (1024.0 * 1024.0));
-    
-    printf("\n统计信息:\n");
+
+    printf("\nStatistics:\n");
     printf("  - total_intervals: %zu\n", total_intervals);
     printf("  - max_intervals_per_node: %zu\n", max_intervals_per_node);
-    printf("  - 平均每节点区间数: %.2f\n", 
+    printf("  - avg intervals per node: %.2f\n",
            nodes.empty() ? 0.0 : (double)total_intervals / nodes.size());
-    
+
     gettimeofday(&end_at, nullptr);
     double elapsed = (end_at.tv_sec - start_at.tv_sec)
                    + (end_at.tv_usec - start_at.tv_usec) * 1e-6;
-    printf("\n计算时间: %.3f ms\n", elapsed * 1000);
+    printf("\nElapsed: %.3f ms\n", elapsed * 1000);
 }
-
-
 
 void verify_ferrari_index() {
     timeval start_at, end_at;
     gettimeofday(&start_at, nullptr);
-    
-    printf("\n=== 开始验证Ferrari索引 ===\n");
-    
+
+    printf("\n=== Start verifying Ferrari index ===\n");
+
     int total_nodes = nodes.size();
     int error_count = 0;
     int total_checks = 0;
-    
-    
+
     for (int node_id = 0; node_id < total_nodes; node_id++) {
-        
         vector<bool> reachable(total_nodes, false);
         stack<int> dfs_stack;
         dfs_stack.push(node_id);
         reachable[node_id] = true;
-        
+
         while (!dfs_stack.empty()) {
             int curr = dfs_stack.top();
             dfs_stack.pop();
-            
-            
+
             for (int i = 0; i < nodes[curr].N_O_SZ; i++) {
                 int next = nodes[curr].N_O[i];
                 if (!reachable[next]) {
@@ -608,31 +516,28 @@ void verify_ferrari_index() {
                 }
             }
         }
-        
-        
+
         vector<vector<int>> reachable_by_group(subgraph_number);
         for (int i = 0; i < total_nodes; i++) {
-            if (reachable[i] && i != node_id) {  
+            if (reachable[i] && i != node_id) {
                 int target_group = nodes[i].group_id;
                 if (target_group >= 0 && target_group < subgraph_number) {
                     reachable_by_group[target_group].push_back(i);
                 }
             }
         }
-        
-        
+
         for (int target_group = 0; target_group < subgraph_number; target_group++) {
             if (target_group == nodes[node_id].group_id) {
-                
                 continue;
             }
-            
+
             const vector<pair<int, int>>& intervals = nodes[node_id].interval_array[target_group];
-            
+
             bool has_error = false;
             for (int reachable_node : reachable_by_group[target_group]) {
                 int tout = nodes[reachable_node].t;
-                
+
                 bool found_in_interval = false;
                 for (const auto& interval : intervals) {
                     if (tout >= interval.first && tout <= interval.second) {
@@ -640,34 +545,34 @@ void verify_ferrari_index() {
                         break;
                     }
                 }
-                
+
                 if (!found_in_interval) {
                     if (!has_error) {
-                        printf("\n节点 %d (组 %d) 的错误:\n", 
+                        printf("\nErrors for node %d (group %d):\n",
                                node_id, nodes[node_id].group_id);
                         has_error = true;
                     }
-                    printf("  - 可达节点 %d (组 %d,  tout=%d) 不在任何区间内\n",
+                    printf("  - reachable node %d (group %d, tout=%d) not covered by any interval\n",
                            reachable_node, target_group, tout);
                     error_count++;
                 }
                 total_checks++;
             }
-            
+
             for (const auto& interval : intervals) {
                 for (int check_node : node_groups[target_group]) {
                     int tin = nodes[check_node].tin;
                     int tout = nodes[check_node].tout;
-                    
+
                     if (tin >= interval.first && tout <= interval.second) {
                         if (!reachable[check_node]) {
                             if (!has_error) {
-                                printf("\n节点 %d (组 %d) 的错误:\n", 
+                                printf("\nErrors for node %d (group %d):\n",
                                        node_id, nodes[node_id].group_id);
                                 has_error = true;
                             }
-                            printf("  - 不可达节点 %d (组 %d, tin=%d, tout=%d) 在区间 [%d, %d] 内\n",
-                                   check_node, target_group, tin, tout, 
+                            printf("  - unreachable node %d (group %d, tin=%d, tout=%d) lies in interval [%d, %d]\n",
+                                   check_node, target_group, tin, tout,
                                    interval.first, interval.second);
                             error_count++;
                         }
@@ -675,35 +580,33 @@ void verify_ferrari_index() {
                 }
             }
         }
-        
+
         if ((node_id + 1) % 1000 == 0) {
-            printf("已验证 %d/%d 个节点...\n", node_id + 1, total_nodes);
+            printf("Verified %d/%d nodes...\n", node_id + 1, total_nodes);
         }
     }
-    
+
     gettimeofday(&end_at, nullptr);
     double elapsed = (end_at.tv_sec - start_at.tv_sec)
                    + (end_at.tv_usec - start_at.tv_usec) * 1e-6;
-    
-    // 输出验证结果
-    printf("\n=== 验证完成 ===\n");
-    printf("总节点数: %d\n", total_nodes);
-    printf("总检查数: %d\n", total_checks);
-    printf("错误数: %d\n", error_count);
+
+    printf("\n=== Verification complete ===\n");
+    printf("Total nodes: %d\n", total_nodes);
+    printf("Total checks: %d\n", total_checks);
+    printf("Errors: %d\n", error_count);
     if (error_count == 0) {
-        printf("✓ Ferrari索引验证通过！所有区间都正确。\n");
+        printf("✓ Ferrari index verified: all intervals are correct.\n");
     } else {
-        printf("✗ Ferrari索引验证失败！发现 %d 个错误。\n", error_count);
+        printf("✗ Ferrari index verification failed: %d errors found.\n", error_count);
     }
-    printf("验证时间: %.3f ms\n", elapsed * 1000);
-    
-    // 详细统计
-    printf("\n详细统计:\n");
+    printf("Verification time: %.3f ms\n", elapsed * 1000);
+
+    printf("\nDetailed stats:\n");
     for (int group = 0; group < subgraph_number; group++) {
         int group_total_intervals = 0;
         int group_max_intervals = 0;
         double group_avg_intervals = 0;
-        
+
         for (int node_id : node_groups[group]) {
             int node_intervals = 0;
             for (int g = 0; g < subgraph_number; g++) {
@@ -712,30 +615,30 @@ void verify_ferrari_index() {
             group_total_intervals += node_intervals;
             group_max_intervals = max(group_max_intervals, node_intervals);
         }
-        
+
         if (!node_groups[group].empty()) {
             group_avg_intervals = (double)group_total_intervals / node_groups[group].size();
         }
-        
-        printf("  组 %d: 节点数=%d, 总区间数=%d, 平均区间数=%.2f, 最大区间数=%d\n",
-               group, (int)node_groups[group].size(), 
+
+        printf("  Group %d: nodes=%d, total intervals=%d, avg intervals=%.2f, max intervals=%d\n",
+               group, (int)node_groups[group].size(),
                group_total_intervals, group_avg_intervals, group_max_intervals);
     }
 }
 
 void verify_node_reachability(int node_id) {
-    printf("\n=== 验证节点 %d (组 %d) 的可达性 ===\n", 
+    printf("\n=== Verify reachability for node %d (group %d) ===\n",
            node_id, nodes[node_id].group_id);
-    
+
     vector<bool> reachable(nodes.size(), false);
     stack<int> dfs_stack;
     dfs_stack.push(node_id);
     reachable[node_id] = true;
-    
+
     while (!dfs_stack.empty()) {
         int curr = dfs_stack.top();
         dfs_stack.pop();
-        
+
         for (int i = 0; i < nodes[curr].N_O_SZ; i++) {
             int next = nodes[curr].N_O[i];
             if (!reachable[next]) {
@@ -744,22 +647,22 @@ void verify_node_reachability(int node_id) {
             }
         }
     }
-    
+
     for (int target_group = 0; target_group < subgraph_number; target_group++) {
-        printf("\n目标组 %d:\n", target_group);
-        
-        printf("  区间: ");
+        printf("\nTarget group %d:\n", target_group);
+
+        printf("  Intervals: ");
         const vector<pair<int, int>>& intervals = nodes[node_id].interval_array[target_group];
         if (intervals.empty()) {
-            printf("无");
+            printf("None");
         } else {
             for (const auto& interval : intervals) {
                 printf("[%d, %d] ", interval.first, interval.second);
             }
         }
         printf("\n");
-        
-        printf("  可达节点: ");
+
+        printf("  Reachable nodes: ");
         int count = 0;
         for (int i : node_groups[target_group]) {
             if (reachable[i] && i != node_id) {
@@ -772,19 +675,11 @@ void verify_node_reachability(int node_id) {
             }
         }
         if (count == 0) {
-            printf("无");
+            printf("None");
         }
         printf("\n");
     }
 }
-
-
-
-
-
-
-
-
 
 vector<pair<node, node>> queries;
 
@@ -801,21 +696,15 @@ void read_queries(const char *filename) {
   gettimeofday(&end_at, 0);
 }
 
-
-
-
-
 inline bool fast_in_intervals(const vector<pair<int,int>>& intervals, int key) {
     int n = (int)intervals.size();
     const auto* iv = intervals.data();
     if (n < BS_THRESHOLD) {
-        // 线性扫描
         for (int i = 0; i < n; i++) {
             if (key >= iv[i].first && key <= iv[i].second) return true;
         }
         return false;
     }
-    // 二分查找
     int l = 0, r = n - 1;
     while (l <= r) {
         int m = (l + r) >> 1;
@@ -827,13 +716,11 @@ inline bool fast_in_intervals(const vector<pair<int,int>>& intervals, int key) {
     return false;
 }
 
-
 inline bool reach(const node &u, const node &v) {
-    if (u.id == v.id) return true;      
+    if (u.id == v.id) return true;
     int g = v.group_id;
     return fast_in_intervals(u.interval_array[g], v.t);
 }
-
 
 void run_queries() {
   timeval start_at, end_at;
@@ -842,12 +729,11 @@ void run_queries() {
   for (vector<pair<node, node>>::iterator it = queries.begin(); it != queries.end(); ++it) {
     vis_cur++;
     int result = reach(it->first, it->second);
-    
     if (result) {
       count++;
     }
-  } 
-  
+  }
+
   gettimeofday(&end_at, 0);
   printf("query time: %.3fms\n",
          (end_at.tv_sec - start_at.tv_sec) * 1000 +
@@ -856,19 +742,15 @@ void run_queries() {
 }
 
 void free_all_memory() {
-    // 释放每个 node 中的 N_O 和 N_I 数组
     for (auto& node : nodes) {
         delete[] node.N_O;
         delete[] node.N_I;
         node.N_O = nullptr;
         node.N_I = nullptr;
-
-        // interval_array 是 vector 的 vector，会自动析构释放内部 pair
         node.interval_array.clear();
         node.interval_array.shrink_to_fit();
     }
 
-    // 释放全局容器
     nodes.clear();
     nodes.shrink_to_fit();
 
@@ -880,8 +762,6 @@ void free_all_memory() {
 
     queries.clear();
     queries.shrink_to_fit();
-
-    
 }
 
 }
@@ -900,20 +780,16 @@ int main(int argc, char *argv[]) {
     std::fprintf(stderr, "Error: cannot redirect stdout to %s\n", outname.c_str());
     return 1;
   }
-  
+
   read_graph(argv[1]);
 
-	
-	
+  calculate_subgraph_sizes();
+  build_all_group_subgraphs();
 
-	calculate_subgraph_sizes(); 
-	build_all_group_subgraphs();  // 构建基于组的子图
+  calculate_index_size();
+  // verify_ferrari_index();
 
-    calculate_index_size();
-    // verify_ferrari_index();
-	
-
-    for (const auto& entry : fs::directory_iterator(dir)) {
+  for (const auto& entry : fs::directory_iterator(dir)) {
     if (!entry.is_regular_file()) continue;
 
     string filename = entry.path().filename().string();
@@ -927,7 +803,7 @@ int main(int argc, char *argv[]) {
     if (has_prefix && !ends_with_info) {
       string full_path = entry.path().string();
       string filename = entry.path().filename().string();
-      cout << "处理文件: " << filename << endl;
+      cout << "Processing file: " << filename << endl;
 
       read_queries(full_path.c_str());
       run_queries();

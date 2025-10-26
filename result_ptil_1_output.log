@@ -1,0 +1,80 @@
+read time(graph): 24.892 ms
+
+=== Compute subgraph group sizes (random even partition of all nodes) ===
+Total nodes: 6000
+Number of groups: 1
+
+Grouping result (random even split):
+  Group 0: 6000 nodes
+
+Verify:
+  Total assigned nodes: 6000
+  Expected nodes: 6000
+  Min group size: 6000
+  Max group size: 6000
+  Size gap: 0 (should be <= 1)
+  Average group size: 6000.00
+  Std dev: 0.00 (smaller is more even)
+
+Elapsed: 0.452 ms
+
+Start processing groups...
+
+--- Processing group 1/1 ---
+Build Ferrari index for group 0
+  Group 0 index built
+  - number of nodes: 6000
+  - total intervals: 76494
+  - nodes with intervals: 5376
+  - avg intervals on nodes with intervals: 14.23
+  - max intervals: 76
+  - build time: 28.906 ms
+
+=== Summary of group subgraph construction ===
+Total build time: 28.928 ms
+=== Finished building group subgraphs ===
+
+
+=== Compute index size and statistics ===
+
+Memory usage:
+  - interval_memory: 0.584 MB
+  - timestamp_memory: 0.023 MB
+  - total_memory: 0.606 MB
+
+Statistics:
+  - total_intervals: 76494
+  - max_intervals_per_node: 76
+  - avg intervals per node: 12.75
+
+Elapsed: 0.023 ms
+Processing file: query_t_0.txt
+query time: 3.871ms
+reachable: 100000
+Processing file: query_t_3.txt
+query time: 3.882ms
+reachable: 100000
+Processing file: query_f_1.txt
+query time: 4.364ms
+reachable: 0
+Processing file: query_f_2.txt
+query time: 4.369ms
+reachable: 0
+Processing file: query_f_3.txt
+query time: 4.366ms
+reachable: 0
+Processing file: query_f_4.txt
+query time: 4.344ms
+reachable: 0
+Processing file: query_t_1.txt
+query time: 3.897ms
+reachable: 100000
+Processing file: query_f_0.txt
+query time: 4.396ms
+reachable: 0
+Processing file: query_t_4.txt
+query time: 3.893ms
+reachable: 100000
+Processing file: query_t_2.txt
+query time: 3.900ms
+reachable: 100000
