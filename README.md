@@ -24,7 +24,9 @@ Run:
 ./dy2 <graph.txt> <per_group.> <rounds.> <K.> 
 
 per_group. is	Initial number of nodes in each group (Vs and Vt)
+
 rounds. is	Number of dynamic update rounds
+
 K.	is Number of nodes randomly deleted and then inserted back per round
 
 
