@@ -1,4 +1,7 @@
+for ptil.cpp:
+
 Compile:
+
 
 g++ -O2 -std=c++17 -o ptil ptil.cpp
 
@@ -10,6 +13,23 @@ k. is the number of groups
 
 query file:<graph.txt>/query/query_*.txt
 
+for dy2.cpp:
+
+Compile:
+
+g++ -O2 -std=c++17 -o dy2 dy2.cpp
+
+Run:
+
+./dy2 <graph.txt> <per_group> <rounds> <K> 
+
+per_group is	Initial number of nodes in each group (Vs and Vt)
+rounds is	Number of dynamic update rounds
+K	is Number of nodes randomly deleted and then inserted back per round
+
+
+
+<graph.txt>:
  ```
 # optional comment lines start with '#'
 N M
