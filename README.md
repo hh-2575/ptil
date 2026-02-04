@@ -21,11 +21,11 @@ g++ -O2 -std=c++17 -o dy2 dy2.cpp
 
 Run:
 
-./dy2 <graph.txt> <per_group> <rounds> <K> 
+./dy2 <graph.txt> <per_group.> <rounds.> <K.> 
 
-per_group is	Initial number of nodes in each group (Vs and Vt)
-rounds is	Number of dynamic update rounds
-K	is Number of nodes randomly deleted and then inserted back per round
+per_group. is	Initial number of nodes in each group (Vs and Vt)
+rounds. is	Number of dynamic update rounds
+K.	is Number of nodes randomly deleted and then inserted back per round
 
 
 
